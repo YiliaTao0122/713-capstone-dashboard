@@ -5,8 +5,8 @@ import plotly.express as px
 # Title and Introduction
 st.title("EcoSoil Insights: Auckland Soil Quality Monitoring Dashboard")
 st.markdown("""
-This dashboard provides insights into Auckland's soil quality, integrating key metrics like pH, Total Carbon (TC%), Total Nitrogen (TN%), and trace elements 
-(As, Cd, Cr, Cu, Ni, Pb, Zn). It aims to assist landowners, policymakers, and stakeholders in making data-driven decisions for sustainable land management.
+This dashboard provides insights into Auckland's soil quality, integrating key metrics like pH, Total Carbon (TC%), Total Nitrogen (TN%), 
+and trace elements (As, Cd, Cr, Cu, Ni, Pb, Zn). Use the filters to explore soil quality by land use, period, and site number.
 """)
 
 # File Upload
@@ -20,7 +20,7 @@ if uploaded_file:
     st.sidebar.title("Filters")
     land_use_filter = st.sidebar.multiselect("Select Land Use", data['Land use'].unique())
     period_filter = st.sidebar.multiselect("Select Period", data['Period'].unique())
-    site_filter = st.sidebar.multiselect("Select Site", data['Site No.1'].unique())
+    site_filter = st.sidebar.multiselect("Select Site Number", data['Site No.1'].unique())
 
     # Filter data
     filtered_data = data
@@ -38,21 +38,21 @@ if uploaded_file:
     col2.metric("Average Olsen P (mg/kg)", round(filtered_data['Olsen P'].mean(), 2))
     col3.metric("Average Bulk Density (g/cm³)", round(filtered_data['BD'].mean(), 2))
 
-    # Contamination Levels
-    st.header("Contamination Levels")
-    if 'ICI_Class' in filtered_data.columns:
-        contamination_fig = px.pie(filtered_data, names='ICI_Class', title="Contamination Levels Distribution")
-        st.plotly_chart(contamination_fig)
-
-    # Soil Metric Trends
-    st.header("Soil Metric Trends Over Time")
+    # Bar Charts for Soil Quality Metrics
+    st.header("Soil Quality Metrics by Land Use")
     metric_options = ['pH', 'TC %', 'TN %', 'Olsen P', 'AMN', 'BD']
-    selected_metric = st.selectbox("Select a metric to view trends", metric_options)
-    if 'Year' in filtered_data.columns:
-        trend_fig = px.line(filtered_data, x='Year', y=selected_metric, color='Land use', title=f"{selected_metric} Trends Over Time")
-        st.plotly_chart(trend_fig)
+    selected_metric = st.selectbox("Select a metric to view by Land Use", metric_options)
+    if 'Land use' in filtered_data.columns:
+        bar_chart = px.bar(
+            filtered_data.groupby('Land use')[selected_metric].mean().reset_index(),
+            x='Land use',
+            y=selected_metric,
+            title=f"Average {selected_metric} by Land Use",
+            labels={selected_metric: f"Average {selected_metric}"},
+        )
+        st.plotly_chart(bar_chart)
 
-    # Geographic Distribution
+    # Geographical Distribution
     st.header("Geographical Distribution of Monitoring Sites")
     if 'Latitude' in filtered_data.columns and 'Longitude' in filtered_data.columns:
         map_fig = px.scatter_mapbox(
@@ -66,13 +66,6 @@ if uploaded_file:
             mapbox_style="open-street-map"
         )
         st.plotly_chart(map_fig)
-
-    # Trace Elements
-    st.header("Trace Element Analysis")
-    trace_elements = ['As', 'Cd', 'Cr', 'Cu', 'Ni', 'Pb', 'Zn']
-    selected_trace = st.selectbox("Select a trace element to view details", trace_elements)
-    trace_fig = px.box(filtered_data, x='Land use', y=selected_trace, color='Land use', title=f"{selected_trace} Levels by Land Use")
-    st.plotly_chart(trace_fig)
 
     # Recommendations
     st.header("Recommendations")
@@ -93,5 +86,3 @@ if uploaded_file:
     )
 else:
     st.info("Please upload a CSV file to view the dashboard.")
-
-
