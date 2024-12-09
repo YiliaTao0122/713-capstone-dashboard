@@ -40,52 +40,48 @@ if uploaded_file:
 
     # Tabs for Visualization
     st.header("Soil Quality Insights")
-    tab1, tab2, tab3 = st.tabs(["Summary", "Contamination Analysis", "Geographical Insights"])
+    tab1, tab2 = st.tabs(["Trace Element Hotspots", "Contamination Analysis"])
 
-    # Tab 1: Summary
+    # Tab 1: Trace Element Hotspots
     with tab1:
-        st.subheader("Soil Metrics by Land Use")
-        metric_options = ['pH', 'TC %', 'TN %', 'Olsen P', 'AMN', 'BD']
-        selected_metric = st.selectbox("Select a metric to view by Land Use", metric_options)
-        if 'Land use' in filtered_data.columns:
-            bar_chart = px.bar(
-                filtered_data.groupby('Land use')[selected_metric].mean().reset_index(),
-                x='Land use',
-                y=selected_metric,
-                title=f"Average {selected_metric} by Land Use",
-                labels={selected_metric: f"Average {selected_metric}"},
+        st.subheader("Trace Element Hotspots")
+        trace_elements = ['As', 'Cd', 'Cr', 'Cu', 'Ni', 'Pb', 'Zn']
+        selected_trace = st.selectbox("Select a trace element to view hotspots", trace_elements)
+        if selected_trace in filtered_data.columns:
+            hotspot_chart = px.bar(
+                filtered_data.groupby('Site No.1')[selected_trace].mean().reset_index(),
+                x='Site No.1',
+                y=selected_trace,
+                title=f"Hotspots for {selected_trace}",
+                labels={selected_trace: f"Average {selected_trace} (mg/kg)", 'Site No.1': "Site Number"},
+                color=selected_trace,
             )
-            st.plotly_chart(bar_chart)
+            st.plotly_chart(hotspot_chart)
 
     # Tab 2: Contamination Analysis
     with tab2:
         st.subheader("Contamination Levels")
         if 'ICI_Class' in filtered_data.columns:
-            contamination_fig = px.pie(filtered_data, names='ICI_Class', title="Contamination Levels Distribution")
+            contamination_fig = px.pie(
+                filtered_data,
+                names='ICI_Class',
+                title="Contamination Levels Distribution",
+                color_discrete_sequence=px.colors.qualitative.Set2,
+            )
             st.plotly_chart(contamination_fig)
 
-        st.subheader("Trace Element Levels")
-        trace_elements = ['As', 'Cd', 'Cr', 'Cu', 'Ni', 'Pb', 'Zn']
-        selected_trace = st.selectbox("Select a trace element to view", trace_elements)
-        trace_fig = px.box(filtered_data, x='Land use', y=selected_trace, color='Land use',
-                           title=f"{selected_trace} Levels by Land Use")
-        st.plotly_chart(trace_fig)
-
-    # Tab 3: Geographical Insights
-    with tab3:
-        st.subheader("Geographical Distribution of Monitoring Sites")
-        if 'Latitude' in filtered_data.columns and 'Longitude' in filtered_data.columns:
-            map_fig = px.scatter_mapbox(
-                filtered_data,
-                lat='Latitude',
-                lon='Longitude',
+        st.subheader("Contamination Level Trends")
+        if 'ICI_Class' in filtered_data.columns:
+            contamination_bar = px.bar(
+                filtered_data.groupby('ICI_Class')['Site No.1'].count().reset_index(),
+                x='ICI_Class',
+                y='Site No.1',
+                title="Number of Sites by Contamination Level",
+                labels={'Site No.1': "Number of Sites", 'ICI_Class': "Contamination Level"},
                 color='ICI_Class',
-                size='Olsen P',
-                hover_name='Site No.1',
-                title="Soil Monitoring Sites",
-                mapbox_style="open-street-map"
+                color_discrete_sequence=px.colors.qualitative.Set2,
             )
-            st.plotly_chart(map_fig)
+            st.plotly_chart(contamination_bar)
 
     # Recommendations
     st.header("Recommendations")
