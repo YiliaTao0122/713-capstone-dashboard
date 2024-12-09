@@ -85,11 +85,23 @@ if uploaded_file:
 
     # Recommendations
     st.header("Recommendations")
-    st.markdown("""
-    - **High Olsen P Sites**: Reduce phosphate fertilizer usage and adopt slow-release alternatives.
-    - **Low Macroporosity Sites**: Minimize heavy stocking during wet periods to prevent compaction.
-    - **High Contamination Sites**: Monitor and remediate trace element contamination to meet guidelines.
-    """)
+    recommendations = []
+    if filtered_data['Olsen P'].mean() > 30:
+        recommendations.append("⚠️ **High Olsen P Levels**: Reduce phosphate fertilizer usage and adopt slow-release alternatives.")
+    if filtered_data['BD'].mean() > 1.5:
+        recommendations.append("⚠️ **High Bulk Density**: Reduce soil compaction by minimizing heavy stocking during wet periods.")
+    if 'ICI_Class' in filtered_data.columns and not filtered_data[filtered_data['ICI_Class'] == 'High'].empty:
+        recommendations.append("⚠️ **High Contamination Sites Detected**: Monitor and remediate trace element contamination.")
+    trace_thresholds = {'Cd': 0.6, 'Zn': 150}
+    for element, threshold in trace_thresholds.items():
+        if element in filtered_data.columns and filtered_data[element].mean() > threshold:
+            recommendations.append(f"⚠️ **High {element} Levels**: Consider remediation to prevent toxicity risks.")
+    if recommendations:
+        st.subheader("Dynamic Recommendations")
+        for rec in recommendations:
+            st.markdown(f"- {rec}")
+    else:
+        st.markdown("✅ Soil quality metrics are within acceptable ranges.")
 
     # Data Download
     st.header("Download Filtered Data")
