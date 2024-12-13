@@ -11,11 +11,14 @@ to make data-driven decisions for sustainable land management.
 """)
 
 # File Upload
-uploaded_file = st.file_uploader("Upload your cleaned dataset (CSV)", type=["csv"])
+uploaded_file = st.file_uploader("Upload your cleaned dataset (CSV or Excel)", type=["csv", "xlsx"])
 
 if uploaded_file:
     # Load data
-    data = pd.read_csv(uploaded_file)
+    if uploaded_file.name.endswith('.csv'):
+        data = pd.read_csv(uploaded_file)
+    else:
+        data = pd.read_excel(uploaded_file)
 
     # Sidebar Filters
     st.sidebar.title("Filters")
@@ -89,38 +92,50 @@ if uploaded_file:
             )
             st.plotly_chart(bar_chart)
 
+        st.subheader("Time Series of Selected Metric")
+        if 'Period' in filtered_data.columns:
+            time_chart = px.line(
+                filtered_data.groupby('Period')[selected_metric].mean().reset_index(),
+                x='Period',
+                y=selected_metric,
+                title=f"{selected_metric} Trends Over Time",
+                labels={selected_metric: f"{selected_metric}"}
+            )
+            st.plotly_chart(time_chart)
+
     # Tab 2: Contamination Analysis
     with tab2:
         st.subheader("Contamination Levels")
-        contamination_level = filtered_data['Olsen P'].mean()  # Example contamination metric
-        fig = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=contamination_level,
-            title={'text': "Contamination Level"},
-            gauge={
-                'axis': {'range': [0, 100]},
-                'steps': [
-                    {'range': [0, 40], 'color': "green"},
-                    {'range': [40, 70], 'color': "yellow"},
-                    {'range': [70, 100], 'color': "red"}
-                ],
-                'threshold': {
-                    'line': {'color': "black", 'width': 4},
-                    'thickness': 0.75,
-                    'value': contamination_level
+        if 'ICI' in filtered_data.columns:
+            average_ici = filtered_data['ICI'].mean()
+            fig = go.Figure(go.Indicator(
+                mode="gauge+number",
+                value=average_ici,
+                title={'text': "Average ICI (Contamination Level)"},
+                gauge={
+                    'axis': {'range': [0, 3]},
+                    'steps': [
+                        {'range': [0, 1], 'color': "green"},
+                        {'range': [1, 2], 'color': "yellow"},
+                        {'range': [2, 3], 'color': "red"}
+                    ],
+                    'threshold': {
+                        'line': {'color': "black", 'width': 4},
+                        'thickness': 0.75,
+                        'value': average_ici
+                    }
                 }
-            }
-        ))
-        st.plotly_chart(fig)
+            ))
+            st.plotly_chart(fig)
 
-        # Dynamic Recommendations
-        st.subheader("Recommendations")
-        if contamination_level < 40:
-            st.markdown("- **Contamination Level is Low**: Maintain current soil management practices.")
-        elif 40 <= contamination_level <= 70:
-            st.markdown("- **Contamination Level is Moderate**: Reduce phosphate fertilizer usage and consider remediation measures.")
-        else:
-            st.markdown("- **Contamination Level is High**: Immediate intervention required to remediate soil contamination and ensure compliance with environmental guidelines.")
+            # Dynamic Recommendations
+            st.subheader("Recommendations")
+            if average_ici <= 1:
+                st.markdown("- **Low Contamination**: Maintain current soil management practices.")
+            elif 1 < average_ici <= 2:
+                st.markdown("- **Moderate Contamination**: Reduce contaminant inputs and consider soil enhancement strategies.")
+            else:
+                st.markdown("- **High Contamination**: Immediate remediation required. Consult with soil management experts.")
 
     # Tab 3: Geographical Insights
     with tab3:
@@ -148,4 +163,4 @@ if uploaded_file:
         mime="text/csv",
     )
 else:
-    st.info("Please upload a CSV file to view the dashboard.")
+    st.info("Please upload a CSV or Excel file to view the dashboard.")
