@@ -20,11 +20,16 @@ if uploaded_file:
     else:
         data = pd.read_excel(uploaded_file)
 
+    # Ensure 'Year' column is present and sorted
+    if 'Year' in data.columns:
+        data = data.sort_values(by='Year')
+        data.set_index('Year', inplace=True)
+
     # Sidebar Filters
     st.sidebar.title("Filters")
-    land_use_filter = st.sidebar.multiselect("Select Land Use", data['Land use'].unique())
-    period_filter = st.sidebar.multiselect("Select Period", data['Period'].unique())
-    site_filter = st.sidebar.multiselect("Select Site Number", data['Site Num'].unique())
+    land_use_filter = st.sidebar.multiselect("Select Land Use", data['Land use'].unique()) if 'Land use' in data.columns else None
+    period_filter = st.sidebar.multiselect("Select Period", data['Period'].unique()) if 'Period' in data.columns else None
+    site_filter = st.sidebar.multiselect("Select Site Number", data['Site Num'].unique()) if 'Site Num' in data.columns else None
 
     # Filter data
     filtered_data = data
