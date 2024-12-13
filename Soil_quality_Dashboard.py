@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 # Title and Introduction
 st.title("EcoSoil Insights: Auckland Soil Quality Monitoring Dashboard")
@@ -20,7 +21,7 @@ if uploaded_file:
     st.sidebar.title("Filters")
     land_use_filter = st.sidebar.multiselect("Select Land Use", data['Land use'].unique())
     period_filter = st.sidebar.multiselect("Select Period", data['Period'].unique())
-    site_filter = st.sidebar.multiselect("Select Site Number", data['Site No.1'].unique())
+    site_filter = st.sidebar.multiselect("Select Site Number", data['Site Num'].unique())
 
     # Filter data
     filtered_data = data
@@ -29,7 +30,37 @@ if uploaded_file:
     if period_filter:
         filtered_data = filtered_data[filtered_data['Period'].isin(period_filter)]
     if site_filter:
-        filtered_data = filtered_data[filtered_data['Site No.1'].isin(site_filter)]
+        filtered_data = filtered_data[filtered_data['Site Num'].isin(site_filter)]
+
+    # Homepage: Filtered Data with Threshold Coloring
+    st.header("Filtered Soil Quality Data")
+    if not filtered_data.empty:
+        def apply_thresholds(row):
+            thresholds = {
+                'pH': (5.5, 7.5),
+                'TC %': (2.0, 4.0),
+                'TN %': (0.2, 0.5),
+                'Olsen P': (20, 40),
+                'AMN': (50, 100),
+                'BD': (1.0, 1.6),
+                'MP-5': (10, 30),
+                'MP-10': (5, 15)
+            }
+            styled_row = row.copy()
+            for col, (low, high) in thresholds.items():
+                if col in row:
+                    if row[col] < low:
+                        styled_row[col] = f"🔴 {row[col]}"
+                    elif row[col] > high:
+                        styled_row[col] = f"🟠 {row[col]}"
+                    else:
+                        styled_row[col] = f"🟢 {row[col]}"
+            return styled_row
+
+        styled_data = filtered_data.apply(apply_thresholds, axis=1)
+        st.dataframe(styled_data)
+    else:
+        st.warning("No data available for the selected filters.")
 
     # Header KPIs
     st.header("Key Performance Indicators")
@@ -60,16 +91,26 @@ if uploaded_file:
     # Tab 2: Contamination Analysis
     with tab2:
         st.subheader("Contamination Levels")
-        if 'ICI_Class' in filtered_data.columns:
-            contamination_fig = px.pie(filtered_data, names='ICI_Class', title="Contamination Levels Distribution")
-            st.plotly_chart(contamination_fig)
-
-        st.subheader("Trace Element Levels")
-        trace_elements = ['As', 'Cd', 'Cr', 'Cu', 'Ni', 'Pb', 'Zn']
-        selected_trace = st.selectbox("Select a trace element to view", trace_elements)
-        trace_fig = px.box(filtered_data, x='Land use', y=selected_trace, color='Land use',
-                           title=f"{selected_trace} Levels by Land Use")
-        st.plotly_chart(trace_fig)
+        contamination_level = filtered_data['Olsen P'].mean()  # Example contamination metric
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=contamination_level,
+            title={'text': "Contamination Level"},
+            gauge={
+                'axis': {'range': [0, 100]},
+                'steps': [
+                    {'range': [0, 40], 'color': "green"},
+                    {'range': [40, 70], 'color': "yellow"},
+                    {'range': [70, 100], 'color': "red"}
+                ],
+                'threshold': {
+                    'line': {'color': "black", 'width': 4},
+                    'thickness': 0.75,
+                    'value': contamination_level
+                }
+            }
+        ))
+        st.plotly_chart(fig)
 
     # Tab 3: Geographical Insights
     with tab3:
@@ -81,7 +122,7 @@ if uploaded_file:
                 lon='Longitude',
                 color='ICI_Class',
                 size='Olsen P',
-                hover_name='Site No.1',
+                hover_name='Site Num',
                 title="Soil Monitoring Sites",
                 mapbox_style="open-street-map"
             )
