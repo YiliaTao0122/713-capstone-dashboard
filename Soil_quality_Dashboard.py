@@ -32,8 +32,9 @@ if uploaded_file:
     if site_filter:
         filtered_data = filtered_data[filtered_data['Site Num'].isin(site_filter)]
 
-    # Homepage: Filtered Data with Threshold Coloring
+    # Homepage: Filtered Data Table
     st.header("Filtered Soil Quality Data")
+    columns_to_display = ['pH', 'TC %', 'TN %', 'Olsen P', 'AMN', 'BD', 'MP-5', 'MP-10']
     if not filtered_data.empty:
         def apply_thresholds(row):
             thresholds = {
@@ -57,7 +58,7 @@ if uploaded_file:
                         styled_row[col] = f"🟢 {row[col]}"
             return styled_row
 
-        styled_data = filtered_data.apply(apply_thresholds, axis=1)
+        styled_data = filtered_data[columns_to_display].apply(apply_thresholds, axis=1)
         st.dataframe(styled_data)
     else:
         st.warning("No data available for the selected filters.")
@@ -112,6 +113,15 @@ if uploaded_file:
         ))
         st.plotly_chart(fig)
 
+        # Dynamic Recommendations
+        st.subheader("Recommendations")
+        if contamination_level < 40:
+            st.markdown("- **Contamination Level is Low**: Maintain current soil management practices.")
+        elif 40 <= contamination_level <= 70:
+            st.markdown("- **Contamination Level is Moderate**: Reduce phosphate fertilizer usage and consider remediation measures.")
+        else:
+            st.markdown("- **Contamination Level is High**: Immediate intervention required to remediate soil contamination and ensure compliance with environmental guidelines.")
+
     # Tab 3: Geographical Insights
     with tab3:
         st.subheader("Geographical Distribution of Monitoring Sites")
@@ -127,14 +137,6 @@ if uploaded_file:
                 mapbox_style="open-street-map"
             )
             st.plotly_chart(map_fig)
-
-    # Recommendations
-    st.header("Recommendations")
-    st.markdown("""
-    - **High Olsen P Sites**: Reduce phosphate fertilizer usage and adopt slow-release alternatives.
-    - **Low Macroporosity Sites**: Minimize heavy stocking during wet periods to prevent compaction.
-    - **High Contamination Sites**: Monitor and remediate trace element contamination to meet guidelines.
-    """)
 
     # Data Download
     st.header("Download Filtered Data")
