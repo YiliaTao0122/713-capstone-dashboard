@@ -89,7 +89,7 @@ if uploaded_file:
 
     # Tabs for Visualization
     st.header("Soil Quality Insights")
-    tab1, tab2, tab3 = st.tabs(["Summary", "Contamination Analysis", "Geographical Insights"])
+    tab1, tab2 = st.tabs(["Summary", "Contamination Analysis"])
 
     # Tab 1: Summary
     with tab1:
