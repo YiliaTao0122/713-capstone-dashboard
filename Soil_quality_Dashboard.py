@@ -20,25 +20,28 @@ if uploaded_file:
     else:
         data = pd.read_excel(uploaded_file)
 
-    # Ensure 'Year' column is present and sorted
-    if 'Year' in data.columns:
-        data = data.sort_values(by='Year')
-        data.set_index('Year', inplace=True)
+    # Standardize column names
+    data.columns = data.columns.str.strip().str.lower().str.replace(' ', '_')
+
+    # Ensure 'year' column is present and sorted
+    if 'year' in data.columns:
+        data = data.sort_values(by='year')
+        data.set_index('year', inplace=True)
 
     # Sidebar Filters
     st.sidebar.title("Filters")
-    land_use_filter = st.sidebar.multiselect("Select Land Use", data['Land use'].unique()) if 'Land use' in data.columns else None
-    period_filter = st.sidebar.multiselect("Select Period", data['Period'].unique()) if 'Period' in data.columns else None
-    site_filter = st.sidebar.multiselect("Select Site Number", data['Site Num'].unique()) if 'Site Num' in data.columns else None
+    land_use_filter = st.sidebar.multiselect("Select Land Use", data['land_use'].unique()) if 'land_use' in data.columns else None
+    period_filter = st.sidebar.multiselect("Select Period", data['period'].unique()) if 'period' in data.columns else None
+    site_filter = st.sidebar.multiselect("Select Site Number", data['site_num'].unique()) if 'site_num' in data.columns else None
 
     # Filter data
     filtered_data = data
     if land_use_filter:
-        filtered_data = filtered_data[filtered_data['Land use'].isin(land_use_filter)]
+        filtered_data = filtered_data[filtered_data['land_use'].isin(land_use_filter)]
     if period_filter:
-        filtered_data = filtered_data[filtered_data['Period'].isin(period_filter)]
+        filtered_data = filtered_data[filtered_data['period'].isin(period_filter)]
     if site_filter:
-        filtered_data = filtered_data[filtered_data['Site Num'].isin(site_filter)]
+        filtered_data = filtered_data[filtered_data['site_num'].isin(site_filter)]
 
     # Display Selected Filters in Sidebar
     st.sidebar.header("Selected Filters")
@@ -50,30 +53,29 @@ if uploaded_file:
     st.header("Filter Results Summary")
     if not filtered_data.empty:
         st.write("### Details of Filtered Data:")
-        st.write(f"**Land Use:** {filtered_data['Land use'].unique()}")
-        st.write(f"**Soil Series:** {filtered_data['Soil series'].unique()}")
-        st.write(f"**Soil Texture:** {filtered_data['Soil texture'].unique()}")
-        st.write(f"**Soil Type:** {filtered_data['Soil type'].unique()}")
-        st.write(f"**Soil Classification:** {filtered_data['Soil classification'].unique()}")
+        optional_columns = ['soil_series', 'soil_texture', 'soil_type', 'nz_soil_classification']
+        for column in optional_columns:
+            if column in filtered_data.columns:
+                st.write(f"**{column.replace('_', ' ').capitalize()}:** {filtered_data[column].unique()}")
     else:
         st.warning("No data available for the selected filters.")
 
     # Contamination Analysis with ICI
     st.header("Contamination Analysis")
-    if 'ICI' in filtered_data.columns:
-        filtered_data['ICI_Class'] = filtered_data['ICI'].apply(
+    if 'ici' in filtered_data.columns:
+        filtered_data['ici_class'] = filtered_data['ici'].apply(
             lambda x: "Low" if x < 1 else ("Moderate" if x <= 3 else "High")
         )
         # Define color map
         color_map = {"Low": "green", "Moderate": "yellow", "High": "red"}
         fig = px.scatter(
             filtered_data,
-            x="Site Num",
-            y="ICI",
-            color="ICI_Class",
+            x="site_num",
+            y="ici",
+            color="ici_class",
             color_discrete_map=color_map,
             title="ICI Levels with Classification",
-            labels={"ICI": "Integrated Contamination Index (ICI)"}
+            labels={"ici": "Integrated Contamination Index (ICI)"}
         )
         st.plotly_chart(fig)
 
@@ -84,3 +86,15 @@ if uploaded_file:
         st.write("- **High (Red):** Immediate remediation required. Consult soil management experts.")
     else:
         st.warning("ICI data not available in the uploaded dataset.")
+
+    # Download Filtered Data
+    st.header("Download Filtered Data")
+    filtered_csv = filtered_data.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Download Filtered Data as CSV",
+        data=filtered_csv,
+        file_name="filtered_soil_data.csv",
+        mime="text/csv",
+    )
+else:
+    st.info("Please upload a CSV or Excel file to view the dashboard.")
