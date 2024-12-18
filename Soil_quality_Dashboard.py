@@ -138,7 +138,7 @@ if uploaded_file:
                     ],
                     'threshold': {
                         'line': {'color': "black", 'width': 6},
-                        'thickness': 2,
+                        'thickness': 1,
                         'value': average_ici
                     }
                 }
