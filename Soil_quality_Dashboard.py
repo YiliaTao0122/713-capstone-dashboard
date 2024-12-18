@@ -20,74 +20,154 @@ if uploaded_file:
     else:
         data = pd.read_excel(uploaded_file)
 
-    # Standardize column names
-    data.columns = data.columns.str.strip().str.lower().str.replace(' ', '_')
-
-    # Ensure 'year' column is present and sorted
-    if 'year' in data.columns:
-        data = data.sort_values(by='year')
-        data.set_index('year', inplace=True)
+    # Ensure 'Year' column is present and sorted
+    if 'Year' in data.columns:
+        data = data.sort_values(by='Year')
+        data.set_index('Year', inplace=True)
 
     # Sidebar Filters
     st.sidebar.title("Filters")
-    land_use_filter = st.sidebar.multiselect("Select Land Use", data['land_use'].unique()) if 'land_use' in data.columns else None
-    period_filter = st.sidebar.multiselect("Select Period", data['period'].unique()) if 'period' in data.columns else None
-    site_filter = st.sidebar.multiselect("Select Site Number", data['site_num'].unique()) if 'site_num' in data.columns else None
+    land_use_filter = st.sidebar.multiselect("Select Land Use", data['Land use'].unique()) if 'Land use' in data.columns else None
+    period_filter = st.sidebar.multiselect("Select Period", data['Period'].unique()) if 'Period' in data.columns else None
+    site_filter = st.sidebar.multiselect("Select Site Number", data['Site Num'].unique()) if 'Site Num' in data.columns else None
 
     # Filter data
     filtered_data = data
     if land_use_filter:
-        filtered_data = filtered_data[filtered_data['land_use'].isin(land_use_filter)]
+        filtered_data = filtered_data[filtered_data['Land use'].isin(land_use_filter)]
     if period_filter:
-        filtered_data = filtered_data[filtered_data['period'].isin(period_filter)]
+        filtered_data = filtered_data[filtered_data['Period'].isin(period_filter)]
     if site_filter:
-        filtered_data = filtered_data[filtered_data['site_num'].isin(site_filter)]
+        filtered_data = filtered_data[filtered_data['Site Num'].isin(site_filter)]
 
-    # Display Selected Filters in Sidebar
-    st.sidebar.header("Selected Filters")
-    st.sidebar.write(f"Land Use: {', '.join(land_use_filter) if land_use_filter else 'All'}")
-    st.sidebar.write(f"Period: {', '.join(period_filter) if period_filter else 'All'}")
-    st.sidebar.write(f"Site Number: {', '.join(map(str, site_filter)) if site_filter else 'All'}")
-
-    # Right-Side Summary Display
-    st.header("Filter Results Summary")
+    # Homepage: Filtered Data Table
+    st.header("Filtered Soil Quality Data")
+    columns_to_display = ['pH', 'TC %', 'TN %', 'Olsen P', 'AMN', 'BD', 'MP-5', 'MP-10']
     if not filtered_data.empty:
-        st.write("### Details of Filtered Data:")
-        optional_columns = ['soil_series', 'soil_texture', 'soil_type', 'nz_soil_classification']
-        for column in optional_columns:
-            if column in filtered_data.columns:
-                st.write(f"**{column.replace('_', ' ').capitalize()}:** {filtered_data[column].unique()}")
+        def apply_thresholds(row):
+            thresholds = {
+                'pH': (5.5, 7.5),
+                'TC %': (2.0, 4.0),
+                'TN %': (0.2, 0.5),
+                'Olsen P': (20, 40),
+                'AMN': (50, 100),
+                'BD': (1.0, 1.6),
+                'MP-5': (10, 30),
+                'MP-10': (5, 15)
+            }
+            styled_row = row.copy()
+            for col, (low, high) in thresholds.items():
+                if col in row:
+                    if row[col] < low:
+                        styled_row[col] = f"🔴 {row[col]}"
+                    elif row[col] > high:
+                        styled_row[col] = f"🟠 {row[col]}"
+                    else:
+                        styled_row[col] = f"🟢 {row[col]}"
+            return styled_row
+
+        styled_data = filtered_data[columns_to_display].apply(apply_thresholds, axis=1)
+        st.dataframe(styled_data)
     else:
         st.warning("No data available for the selected filters.")
 
-    # Contamination Analysis with ICI
-    st.header("Contamination Analysis")
-    if 'ici' in filtered_data.columns:
-        filtered_data['ici_class'] = filtered_data['ici'].apply(
-            lambda x: "Low" if x < 1 else ("Moderate" if x <= 3 else "High")
-        )
-        # Define color map
-        color_map = {"Low": "green", "Moderate": "yellow", "High": "red"}
-        fig = px.scatter(
-            filtered_data,
-            x="site_num",
-            y="ici",
-            color="ici_class",
-            color_discrete_map=color_map,
-            title="ICI Levels with Classification",
-            labels={"ici": "Integrated Contamination Index (ICI)"}
-        )
-        st.plotly_chart(fig)
+    # Display Detailed Information about Filtered Data
+    st.header("Filter Results Summary")
+    if not filtered_data.empty:
+        st.write("### Details of Filtered Data:")
+        optional_columns = ['Land use', 'Soil Series', 'Soil texture', 'Soil Type', 'Soil Classification']
+        for column in optional_columns:
+            if column in filtered_data.columns:
+                st.write(f"**{column}:** {filtered_data[column].unique()}")
 
-        # Recommendations
-        st.subheader("ICI Recommendations")
-        st.write("- **Low (Green):** Maintain current soil management practices.")
-        st.write("- **Moderate (Yellow):** Reduce contaminant inputs and consider enhancement strategies.")
-        st.write("- **High (Red):** Immediate remediation required. Consult soil management experts.")
-    else:
-        st.warning("ICI data not available in the uploaded dataset.")
+    # Header KPIs
+    st.header("Key Performance Indicators")
+    kpi1, kpi2, kpi3 = st.columns(3)
+    kpi1.metric("Average pH", round(filtered_data['pH'].mean(), 2))
+    kpi2.metric("Average Olsen P (mg/kg)", round(filtered_data['Olsen P'].mean(), 2))
+    kpi3.metric("Average Bulk Density (g/cm³)", round(filtered_data['BD'].mean(), 2))
 
-    # Download Filtered Data
+    # Tabs for Visualization
+    st.header("Soil Quality Insights")
+    tab1, tab2, tab3 = st.tabs(["Summary", "Contamination Analysis", "Geographical Insights"])
+
+    # Tab 1: Summary
+    with tab1:
+        st.subheader("Soil Metrics by Land Use")
+        metric_options = ['pH', 'TC %', 'TN %', 'Olsen P', 'AMN', 'BD']
+        selected_metric = st.selectbox("Select a metric to view by Land Use", metric_options)
+        if 'Land use' in filtered_data.columns:
+            bar_chart = px.bar(
+                filtered_data.groupby('Land use')[selected_metric].mean().reset_index(),
+                x='Land use',
+                y=selected_metric,
+                title=f"Average {selected_metric} by Land Use",
+                labels={selected_metric: f"Average {selected_metric}"},
+            )
+            st.plotly_chart(bar_chart)
+
+        st.subheader("Time Series of Selected Metric")
+        if 'Period' in filtered_data.columns:
+            time_chart = px.line(
+                filtered_data.groupby('Period')[selected_metric].mean().reset_index(),
+                x='Period',
+                y=selected_metric,
+                title=f"{selected_metric} Trends Over Time",
+                labels={selected_metric: f"{selected_metric}"}
+            )
+            st.plotly_chart(time_chart)
+
+    # Tab 2: Contamination Analysis
+    with tab2:
+        st.subheader("Contamination Levels")
+        if 'ICI' in filtered_data.columns:
+            average_ici = filtered_data['ICI'].mean()
+            filtered_data['ICI_Class'] = filtered_data['ICI'].apply(
+                lambda x: "Low" if x < 1 else ("Moderate" if x <= 3 else "High")
+            )
+            fig = go.Figure(go.Indicator(
+                mode="gauge+number",
+                value=average_ici,
+                title={'text': "Average ICI (Contamination Level)"},
+                gauge={
+                    'axis': {'range': [0, 3]},
+                    'steps': [
+                        {'range': [0, 1], 'color': "green"},
+                        {'range': [1, 2], 'color': "yellow"},
+                        {'range': [2, 3], 'color': "red"}
+                    ],
+                    'threshold': {
+                        'line': {'color': "black", 'width': 4},
+                        'thickness': 0.75,
+                        'value': average_ici
+                    }
+                }
+            ))
+            st.plotly_chart(fig)
+
+            # Dynamic Recommendations
+            st.subheader("Recommendations")
+            st.markdown("- **Low Contamination**: Maintain current soil management practices.")
+            st.markdown("- **Moderate Contamination**: Reduce contaminant inputs and consider soil enhancement strategies.")
+            st.markdown("- **High Contamination**: Immediate remediation required. Consult with soil management experts.")
+
+    # Tab 3: Geographical Insights
+    with tab3:
+        st.subheader("Geographical Distribution of Monitoring Sites")
+        if 'Latitude' in filtered_data.columns and 'Longitude' in filtered_data.columns:
+            map_fig = px.scatter_mapbox(
+                filtered_data,
+                lat='Latitude',
+                lon='Longitude',
+                color='ICI_Class',
+                size='Olsen P',
+                hover_name='Site Num',
+                title="Soil Monitoring Sites",
+                mapbox_style="open-street-map"
+            )
+            st.plotly_chart(map_fig)
+
+    # Data Download
     st.header("Download Filtered Data")
     filtered_csv = filtered_data.to_csv(index=False).encode('utf-8')
     st.download_button(
