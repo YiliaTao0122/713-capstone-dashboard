@@ -133,8 +133,8 @@ if uploaded_file:
                     'axis': {'range': [0, 3]},
                     'steps': [
                         {'range': [0, 1], 'color': "green"},
-                        {'range': [1, 2], 'color': "yellow"},
-                        {'range': [2, 3], 'color': "red"}
+                        {'range': [1, 3], 'color': "yellow"},
+                        {'range': [3, 4], 'color': "red"}
                     ],
                     'threshold': {
                         'line': {'color': "black", 'width': 4},
@@ -150,22 +150,6 @@ if uploaded_file:
             st.markdown("- **Low Contamination**: Maintain current soil management practices.")
             st.markdown("- **Moderate Contamination**: Reduce contaminant inputs and consider soil enhancement strategies.")
             st.markdown("- **High Contamination**: Immediate remediation required. Consult with soil management experts.")
-
-    # Tab 3: Geographical Insights
-    with tab3:
-        st.subheader("Geographical Distribution of Monitoring Sites")
-        if 'Latitude' in filtered_data.columns and 'Longitude' in filtered_data.columns:
-            map_fig = px.scatter_mapbox(
-                filtered_data,
-                lat='Latitude',
-                lon='Longitude',
-                color='ICI_Class',
-                size='Olsen P',
-                hover_name='Site Num',
-                title="Soil Monitoring Sites",
-                mapbox_style="open-street-map"
-            )
-            st.plotly_chart(map_fig)
 
     # Data Download
     st.header("Download Filtered Data")
