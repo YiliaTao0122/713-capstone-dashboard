@@ -132,13 +132,13 @@ if uploaded_file:
                 gauge={
                     'axis': {'range': [0, 4],'tickwidth': 2, 'tickcolor': "black"},
                     'steps': [
-                        {'range': [0, 0.99], 'color': "green"},
-                        {'range': [1.01, 2.99], 'color': "yellow"},
-                        {'range': [3.0, 4.0], 'color': "red"}
+                        {'range': [0, 1], 'color': "green"},
+                        {'range': [1, 3], 'color': "yellow"},
+                        {'range': [3, 4], 'color': "red"}
                     ],
                     'threshold': {
                         'line': {'color': "black", 'width': 6},
-                        'thickness': 0.75,
+                        'thickness': 2,
                         'value': average_ici
                     }
                 }
