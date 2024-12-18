@@ -130,7 +130,7 @@ if uploaded_file:
                 value=average_ici,
                 title={'text': "Average ICI (Contamination Level)"},
                 gauge={
-                    'axis': {'range': [0, 4]，'tickwidth': 2, 'tickcolor': "black"},
+                    'axis': {'range': [0, 4]，'tickwidth': 1, 'tickcolor': "black"},
                     'steps': [
                         {'range': [0, 1.0], 'color': "green"},
                         {'range': [1.0, 3.0], 'color': "yellow"},
