@@ -132,8 +132,8 @@ if uploaded_file:
                 gauge={
                     'axis': {'range': [0, 4],'tickwidth': 2, 'tickcolor': "black"},
                     'steps': [
-                        {'range': [0, 1.0], 'color': "green"},
-                        {'range': [1.0, 3.0], 'color': "yellow"},
+                        {'range': [0, 0.99], 'color': "green"},
+                        {'range': [1.0, 2.99], 'color': "yellow"},
                         {'range': [3.0, 4.0], 'color': "red"}
                     ],
                     'threshold': {
