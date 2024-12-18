@@ -133,7 +133,7 @@ if uploaded_file:
                     'axis': {'range': [0, 4],'tickwidth': 2, 'tickcolor': "black"},
                     'steps': [
                         {'range': [0, 0.99], 'color': "green"},
-                        {'range': [1.0, 2.99], 'color': "yellow"},
+                        {'range': [1.01, 2.99], 'color': "yellow"},
                         {'range': [3.0, 4.0], 'color': "red"}
                     ],
                     'threshold': {
